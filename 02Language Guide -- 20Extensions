@@ -1,0 +1,168 @@
+Extensions是为已经存在的增加方法、数据结构或者枚举类型。他包括在你无法获知源代码的情况下扩展的能力（称为逆向建模）。扩展相当于OC中的category。（不同于OC中category的是，Swift Extensions没有名称）
+Extensions在Swift中的用法：
+1.添加计算属性和静态计算属性。
+2.定义实例方法和类方法。
+3.提供新的初始化。
+4.定义下标。
+5.定义和使用新的嵌套类型。
+6.让现有的类型符合协议
+备注：
+如果你为一个已经存在的类型添加新的方法而定义一个extension，这个新方法在所有存在这个类型的实例中可用。（即使这个类型的实例可能是在extension之后定义的也仍然有效。）
+Extension 语法：
+Extensions的运用需要使用extension关键字：
+•	extension SomeType {
+•	// new functionality to add to SomeType goes here
+•	}
+•	extension可以扩展一个存在的类型以适应一个或者多个协议。在这种情况下，协定名称是完全按照类和结构的方式写的：
+•	extension SomeType: SomeProtocol, AnotherProtocol {
+•	// implementation of protocol requirements goes here
+•	}
+用这种方法添加协议一般性介绍在Adding Protocol Conformance with an Extension.
+
+计算属性
+Extensions可以增加计算实例属性和计算类型属性到已经存在的类型中。如下的例子增加了五个计算属性实例到Swift的双字节类型，为运行距离单元提供基础支持：
+•	extension Double {
+•	var km: Double { return self * 1_000.0 }
+•	var m: Double { return self }
+•	var cm: Double { return self / 100.0 }
+•	var mm: Double { return self / 1_000.0 }
+•	var ft: Double { return self / 3.28084 }
+•	}
+•	let oneInch = 25.4.mm
+•	println("One inch is \(oneInch) meters")
+•	// prints "One inch is 0.0254 meters"
+•	let threeFeet = 3.ft
+•	println("Three feet is \(threeFeet) meters")
+•	// prints "Three feet is 0.914399970739201 meters"
+这些计算属性表示一个双字节值应该看做是一个准确的长度单元。尽管他们用计算属性实现，计算属性的名字仍然用点语法被添加到单精度小数的文本值，以作为用文本值转换使用距离的一种方式。
+在这个例子中，一个双精度值1.0代表一米。这是m计算属性返回self--1.m的表达式被认为是计算一个双精度的值1.0的原因。
+其他单位需要一些转换来描述米。一千米就是1000米，所以km计算属性乘以1_000.00就转换成一个米的表达式。同样的，一米等于3.28024feet，所以ft的计算属性除以潜在的双精度值3.28024，可以转从feet转换成米。
+为了简洁，这些属性都是计算属性的只读属性，所以他们表达的不是get关键字。他们的返回值类型是双精度，并且可以用在双精度的数学计算中。
+•	let aMarathon = 42.km + 195.m
+•	println("A marathon is \(aMarathon) meters long")
+•	// prints "A marathon is 42195.0 meters long"
+备注
+Extensions可以增加新的计算属性，但他们不能添加到存储属性，或者添加属性观察现有属性。
+
+初始化
+Extensions可以为已经存在的类型增加新的初始化程序。这让你扩展其他类型来接受你自己的新类型作为初始化参数，或者提供在原来的类型中不存在的起始安装。
+Extensions可以给类添加新的方便的初始化，但是不能给一个类添加特定的初始化程序或者清除它的初始化程序。设计初始化和清除初始化都必须被原来的类的履行来提供。
+如果你利用扩展将初始化程序添加到数值类型（为其存储属性提供默认值），并且没有定义任何自定义初始化，你可以从您的初始化扩展程序中为您的数值类型调用默认值和成员逐一初始值.
+如果你写了初始化的值类型的原始实现就不会这样实现，就像初始化所代表的值类型。
+下面的例子定义了一个常规的矩形结构代表一个几何矩形。这个例子也定义了两个支持的类型大小和点，这两个类型提供了0.0为默认属性。
+struct Size{
+     var width = 0.0,height = 0.0
+}
+struct Point{
+    var x = 0.0,y = 0.0
+}
+struct Rect{
+    var origin = Point()
+    var size = Size()
+}
+因为矩形结构为他的所有属性提供了默认的值，他接受了一个默认初始化和一个成员自动初始化，就像在默认初始化中描述的一样，这些初始化可以被用在创建新的矩形实例。
+let defaultRect = Rect()
+let memberwiseRect = Rect(origin:Point(x:2.0,y:2.0),
+   size:Size(width:5.0,height:5.0))
+你可以扩展矩形结构为一个特殊的点和尺寸做额外的初始化。
+extension Rect{
+    init(center:Point,size:Size{
+       let originX = center.x -(size.width/2)
+       let originY = center.y - (size.height/2)
+      self.init(origin:point(x:originX,y:originY),size:size)
+新的初始化从计算一个基于已经提供的中心点和尺寸的值适当的初始点。这个初始化调用了成员自动初始化init(origin:size:)
+let centerRect = Rect(center:Point(x:4.0,y:4.0),
+      size:Size(width:3.0,height:3.0))
+//中间矩形的初始坐标是（2.5,2.5），他的尺寸是（3.0,3.0）
+
+备注
+如果你提供一个使用了extension的初始化，你还负责确保每个实例初始化完成完全初始化一次。
+
+方法
+extensions可以为存在的类型增加新的实例方法和方法类型。如下的例子为整型增加了一个新的实例方法叫做repetitions。
+extension Int{
+     func repetitions(task:()->()){
+        for i in 0..self{
+           task()
+        }
+     }
+}
+repetition方法带有一个参数，表明一个方法可以没有参数和返回值。
+定义了这个extension，你可以多次调用repetitions方法用在需要重复显示的整数长度上。
+3.repetitions({
+       println("Hello!")
+  })
+使用后关闭语法调用更简洁
+3.repetitions{
+      println("Goodbye!")
+
+变异的实例方法
+添加了extension的实例方法可以修改实例。可以修改他自身或者他的属性的结构和枚举方法必须保存实例方法为突变，就像突变方法从一个原始的实现。
+下面的例子增加一个新突变方法叫做square建立原始值作为Swift的整型类型。
+extension Int{
+    mutating func square(){
+        self = self*self
+    }
+}
+var someInt = 3
+someInt.square()
+//someInt 的值是9
+
+下标
+extensions可以为一个已经存在的类型增加下标。这个例子为Swift构建整数类型增加了一个整型下标。这个下标[n]返回从右边开始十进制数字n的地方：
+123456789[0] 返回9
+123456789[1] 返回8
+
+extension Int{
+    subscript(digitIndex:Int)_>Int{
+       var decimalBase = 1
+          for _in 1...digitIndex{
+               decimalBase *= 10
+         }
+         return (self/self / decimalBase) %10
+   }
+}
+如果整型值没有足够的数字作为需要的指标，下标实现返回0，好像已经被0填充在左边。
+746381295[9]
+0746381295[9]
+//返回0
+
+嵌套类型
+extensions可以为存在的类增加新的嵌套类型、结构和枚举：
+extension Character{
+        enum Kind{
+             case Vowel,Consonant,Other
+        }
+       var kind:Kind{
+        switch String(self).lowercaseString{
+        case "a","e","i","o","u":
+             return .Vowel
+        case  "b","c","d","f","g","h","j","k","l","m","n","p","q","r","s","t","v","w","x","y","z":
+            return .Consonant
+        default:
+            return .Other
+            }
+        }
+}
+
+这个例子增加了一个新的嵌套枚举到类Character。这个枚举类型，称做Kind，表达了这些字符被一些特殊的字符替代。尤其是，他可以表达出不管字符是元音还是辅音还是拉丁，或者是其他类型的字符。
+
+这个例子也为Character增加了一个新的实例属性，叫做kind，为字符返回适当kind枚举成员。
+这个嵌套枚举可以跟Character的值这样使用：
+func printLetterKinds(word:String){
+    println("'\(word)' is made up of the following kinds of letters:")
+    for character in word{
+       switch character.kind{
+       case .Vowel:
+           print("vowel")
+       case .Consonant:
+          print("consonant")
+      case .Other:
+          print("other")
+      }
+    print("\n")
+}
+printLetterKinds("Hello")
+这个方法，printLetterKinds带有一个String类型的参数并且迭代他的字符串。对于不同的字符，针对字符来判断kind方法的计算属性，并且打印适当的对于kind的描述。printLetterKinds方法可以被调用输出所有的单词，就像这里输出“Hello”
+备注：
+character.kind已经知道是Character.Kind类型.因为这个，所有的Character.Kind成员值可以简写在switch语句里面，例如.Vowel代替Character.Kind.Vowel.
